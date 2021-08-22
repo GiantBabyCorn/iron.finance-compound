@@ -889,7 +889,7 @@ contract IronCompound is Ownable {
         isInWhiteList = _isInWhiteList[user];
     }
 
-    function deposite(uint256 amount) public returns (uint256) {
+    function deposite(uint256 amount) public inWhiteList returns (uint256) {
         require(amount > 0, "Fail: zero amount");
         compound();
         // updateAllocRatio();
@@ -909,7 +909,7 @@ contract IronCompound is Ownable {
         return depositingAlloc;
     }
 
-    function withdraw(uint256 amount) public returns (uint256) {
+    function withdraw(uint256 amount) public inWhiteList returns (uint256) {
         require(amount > 0, "Fail: zero amount");
         compound();
         // updateAllocRatio();
