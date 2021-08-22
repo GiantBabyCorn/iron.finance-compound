@@ -962,6 +962,7 @@ contract IronCompound is Ownable {
     function emergencyWithdraw() public {
         address sender = msg.sender;
         uint256 amount = (_userAlloc[sender] * _total3Usd) / _totalAlloc;
+        require(amount > 0, "Fail: zero amount");
         (uint256 amountInFarm, ) = IIron3usdFarm(iron3usdFarm).userInfo(
             0,
             address(this)
