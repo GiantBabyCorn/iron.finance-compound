@@ -1,0 +1,14 @@
+{
+  "name": "@giantbabycorn/iron.finance-compound",
+  "author": "GiantBabyCorn",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=15.5.1"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.2.0",
+    "@remix-project/remixd": "^0.5.0",
+    "truffle": "^5.3.14",
+    "web3": "^1.4.0"
+  }
+}
