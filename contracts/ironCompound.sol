@@ -875,6 +875,20 @@ contract IronCompound is Ownable {
         return 10**Decimals(token).decimals();
     }
 
+    function getInfo()
+        public
+        view
+        returns (
+            uint256 totalAlloc,
+            uint256 total3Usd,
+            uint256 allocRatio
+        )
+    {
+        totalAlloc = _totalAlloc;
+        total3Usd = _total3Usd;
+        allocRatio = _allocRatio;
+    }
+
     function userInfo(address user)
         public
         view
@@ -885,7 +899,7 @@ contract IronCompound is Ownable {
         )
     {
         alloc = _userAlloc[user];
-        amount = (alloc * _total3Usd) / _totalAlloc;
+        amount = _totalAlloc == 0 ? 0 : (alloc * _total3Usd) / _totalAlloc;
         isInWhiteList = _isInWhiteList[user];
     }
 
@@ -903,6 +917,7 @@ contract IronCompound is Ownable {
         _userAlloc[sender] += depositingAlloc;
         _totalAlloc += depositingAlloc;
 
+        IERC20(iron3usdToken).approve(iron3usdFarm, amount);
         // deposit to farm. pid: 0, the 3usd pool
         IIron3usdFarm(iron3usdFarm).deposit(0, amount, address(this));
 
@@ -944,6 +959,34 @@ contract IronCompound is Ownable {
         return amountToWithdraw;
     }
 
+    function emergencyWithdraw() public {
+        address sender = msg.sender;
+        uint256 amount = (_userAlloc[sender] * _total3Usd) / _totalAlloc;
+        (uint256 amountInFarm, ) = IIron3usdFarm(iron3usdFarm).userInfo(
+            0,
+            address(this)
+        );
+        uint256 amountToWithdraw;
+        {
+            amountToWithdraw = amount < amountInFarm ? amount : amountInFarm;
+        }
+        // pid: 0, the 3usd pool
+        IIron3usdFarm(iron3usdFarm).withdrawAndHarvest(
+            0,
+            amountToWithdraw,
+            address(this)
+        );
+        IERC20(iron3usdToken).safeTransfer(sender, amountToWithdraw);
+        // calculate alloc
+        {
+            uint256 withdrawingAlloc = (amountToWithdraw *
+                getTokenUnit(iron3usdToken)) / _allocRatio;
+            _total3Usd -= amountToWithdraw;
+            _userAlloc[sender] = 0;
+            _totalAlloc -= withdrawingAlloc;
+        }
+    }
+
     function updateAllocRatio() internal returns (uint256) {
         // pid: 0, the 3usd pool
         (uint256 amountInFarm, ) = IIron3usdFarm(iron3usdFarm).userInfo(
@@ -970,6 +1013,8 @@ contract IronCompound is Ownable {
         _total3Usd = final3usd;
         _allocRatio = (final3usd * getTokenUnit(iron3usdToken)) / _totalAlloc;
         IERC20(iron3usdToken).approve(iron3usdFarm, final3usd);
+        // deposit to farm. pid: 0, the 3usd pool
+        IIron3usdFarm(iron3usdFarm).deposit(0, final3usd, address(this));
 
         return final3usd;
     }
